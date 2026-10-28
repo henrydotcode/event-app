@@ -1,170 +1,282 @@
+
 "use client";
- 
-import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
- 
+
+import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+
 export default function CheckoutPage() {
   const router = useRouter();
- 
-  // 10-minute countdown state (600 seconds)
+
+  // 10-minute countdown (600 seconds)
   const [timeLeft, setTimeLeft] = useState(600);
   const [isExpired, setIsExpired] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
- 
-  // Timer Countdown Effect
+
+  // Countdown timer
   useEffect(() => {
-	if (timeLeft <= 0) {
-  	setIsExpired(true);
-  	return;
-	}
-	const timerId = setInterval(() => setTimeLeft((prev) => prev - 1), 1000);
-	return () => clearInterval(timerId);
+    if (timeLeft <= 0) {
+      setIsExpired(true);
+      return;
+    }
+
+    const timerId = window.setTimeout(() => {
+      setTimeLeft((prev) => Math.max(0, prev - 1));
+    }, 1000);
+
+    return () => window.clearTimeout(timerId);
   }, [timeLeft]);
- 
+
   // Format time as MM:SS
-  const formatTime = (seconds) => {
-	const m = Math.floor(seconds / 60).toString().padStart(2, '0');
-	const s = (seconds % 60).toString().padStart(2, '0');
-	return `${m}:${s}`;
+  const formatTime = (seconds: number): string => {
+    const minutes = Math.floor(seconds / 60)
+      .toString()
+      .padStart(2, "0");
+    const remainingSeconds = (seconds % 60)
+      .toString()
+      .padStart(2, "0");
+
+    return `${minutes}:${remainingSeconds}`;
   };
- 
-  const handlePayment = async (e) => {
-    e.preventDefault();
+
+  // Handle payment submission
+  const handlePayment = async (
+    event: React.FormEvent<HTMLFormElement>
+  ) => {
+    event.preventDefault();
+
+    if (isExpired || isProcessing) {
+      return;
+    }
+
     setIsProcessing(true);
- 
-	// Simulate backend payment processing and ticket DB writing
-	setTimeout(() => {
-      router.push('/success');
-	}, 2000);
+
+    try {
+      // Demo only: replace with your payment API integration.
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+
+      // Demo redirect. A real checkout should redirect only
+      // after the server confirms successful payment.
+      router.push("/success");
+    } catch (error) {
+      console.error("Payment processing failed:", error);
+      setIsProcessing(false);
+    }
   };
- 
+
   return (
-	<div className="min-h-screen bg-slate-950 font-sans text-slate-200">
-  	{/* Navbar Minimal */}
-  	<nav className="w-full border-b border-slate-800 bg-slate-950 p-6 flex justify-center">
-    	<Link href="/" className="text-2xl font-black text-white tracking-tighter">
+    <div className="min-h-screen bg-slate-950 font-sans text-slate-200">
+      {/* Navbar */}
+      <nav className="flex w-full justify-center border-b border-slate-800 bg-slate-950 p-6">
+        <Link
+          href="/"
+          className="text-2xl font-black tracking-tighter text-white"
+        >
           EASIEVENTS<span className="text-indigo-500">.</span>
-    	</Link>
-  	</nav>
- 
-  	{/* Persistent Timer Banner */}
-  	<div className={`w-full py-3 text-center font-bold text-sm tracking-wide ${isExpired ? 'bg-red-600 text-white' : 'bg-amber-500 text-amber-950'}`}>
-    	{isExpired
-      	? "Time expired! Your reservation has been released."
-      	: `Tickets reserved. Please complete checkout in ${formatTime(timeLeft)}`
-    	}
-  	</div>
- 
-  	<div className="max-w-6xl mx-auto px-6 py-12 grid grid-cols-1 md:grid-cols-2 gap-12 relative">
-    	
-        {/* Left Column: Form */}
-    	<div className={`space-y-8 ${isExpired ? 'opacity-50 pointer-events-none' : ''}`}>
-      	<h1 className="text-3xl font-extrabold text-white">Checkout</h1>
-      	
-      	<form onSubmit={handlePayment} className="space-y-6">
-        	{/* Contact Info */}
-        	<div className="bg-slate-900 p-6 rounded-2xl border border-slate-800 space-y-4">
-          	<h2 className="text-xl font-bold text-white mb-4">Contact Information</h2>
-          	<div className="grid grid-cols-2 gap-4">
+        </Link>
+      </nav>
+
+      {/* Countdown banner */}
+      <div
+        role="status"
+        aria-live="polite"
+        className={`w-full py-3 text-center text-sm font-bold tracking-wide ${
+          isExpired
+            ? "bg-red-600 text-white"
+            : "bg-amber-500 text-amber-950"
+        }`}
+      >
+        {isExpired
+          ? "Time expired! Your reservation has been released."
+          : `Tickets reserved. Please complete checkout in ${formatTime(timeLeft)}`}
+      </div>
+
+      <div className="relative mx-auto grid max-w-6xl grid-cols-1 gap-12 px-6 py-12 md:grid-cols-2">
+        {/* Left column: Checkout form */}
+        <div
+          className={`space-y-8 ${
+            isExpired ? "pointer-events-none opacity-50" : ""
+          }`}
+        >
+          <h1 className="text-3xl font-extrabold text-white">
+            Checkout
+          </h1>
+
+          <form onSubmit={handlePayment} className="space-y-6">
+            {/* Contact information */}
+            <div className="space-y-4 rounded-2xl border border-slate-800 bg-slate-900 p-6">
+              <h2 className="mb-4 text-xl font-bold text-white">
+                Contact Information
+              </h2>
+
+              <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-400 uppercase mb-2">First Name</label>
-                  <input required type="text" className="w-full bg-slate-950 border border-slate-700 rounded-lg p-3 text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition" />
+                  <label
+                    htmlFor="firstName"
+                    className="mb-2 block text-xs font-semibold uppercase text-slate-400"
+                  >
+                    First Name
+                  </label>
+                  <input
+                    id="firstName"
+                    name="firstName"
+                    type="text"
+                    autoComplete="given-name"
+                    required
+                    className="w-full rounded-lg border border-slate-700 bg-slate-950 p-3 text-white outline-none transition focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                  />
                 </div>
+
                 <div>
-                  <label className="block text-xs font-semibold text-slate-400 uppercase mb-2">Last Name</label>
-                  <input required type="text" className="w-full bg-slate-950 border border-slate-700 rounded-lg p-3 text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition" />
+                  <label
+                    htmlFor="lastName"
+                    className="mb-2 block text-xs font-semibold uppercase text-slate-400"
+                  >
+                    Last Name
+                  </label>
+                  <input
+                    id="lastName"
+                    name="lastName"
+                    type="text"
+                    autoComplete="family-name"
+                    required
+                    className="w-full rounded-lg border border-slate-700 bg-slate-950 p-3 text-white outline-none transition focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                  />
                 </div>
               </div>
+
               <div>
-                <label className="block text-xs font-semibold text-slate-400 uppercase mb-2">Email Address</label>
-                <input required type="email" className="w-full bg-slate-950 border border-slate-700 rounded-lg p-3 text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition" />
-            	<p className="text-xs text-slate-500 mt-2">Your PDF tickets will be sent here.</p>
-        	  </div>
-            </div>
- 
-        	{/* Payment Info */}
-        	<div className="bg-slate-900 p-6 rounded-2xl border border-slate-800 space-y-4">
-          	<h2 className="text-xl font-bold text-white mb-4">Payment Method</h2>
-          	<div>
-                <label className="block text-xs font-semibold text-slate-400 uppercase mb-2">Card Number</label>
-                <input required type="text" placeholder="0000 0000 0000 0000" className="w-full bg-slate-950 border border-slate-700 rounded-lg p-3 text-white font-mono placeholder-slate-700 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition" />
-              </div>
-          	<div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-400 uppercase mb-2">Expiry</label>
-                  <input required type="text" placeholder="MM/YY" className="w-full bg-slate-950 border border-slate-700 rounded-lg p-3 text-white font-mono placeholder-slate-700 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition" />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-400 uppercase mb-2">CVC</label>
-                  <input required type="text" placeholder="123" className="w-full bg-slate-950 border border-slate-700 rounded-lg p-3 text-white font-mono placeholder-slate-700 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition" />
-                </div>
+                <label
+                  htmlFor="email"
+                  className="mb-2 block text-xs font-semibold uppercase text-slate-400"
+                >
+                  Email Address
+                </label>
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  autoComplete="email"
+                  required
+                  className="w-full rounded-lg border border-slate-700 bg-slate-950 p-3 text-white outline-none transition focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                />
+                <p className="mt-2 text-xs text-slate-500">
+                  Your PDF tickets will be sent here.
+                </p>
               </div>
             </div>
- 
-        	<button
+
+            {/* Payment information */}
+            <div className="space-y-4 rounded-2xl border border-slate-800 bg-slate-900 p-6">
+              <h2 className="mb-4 text-xl font-bold text-white">
+                Payment Method
+              </h2>
+
+              <p className="text-sm text-slate-400">
+                Payment form placeholder. Use a PCI-compliant
+                payment provider for real card payments.
+              </p>
+            </div>
+
+            <button
               type="submit"
               disabled={isExpired || isProcessing}
-              className="w-full py-4 rounded-xl font-bold text-lg bg-indigo-600 hover:bg-indigo-500 text-white disabled:bg-slate-800 disabled:text-slate-500 transition-all flex justify-center items-center"
-        	>
-              {isProcessing ? "Processing Payment..." : "Pay $187.00"}
+              className="flex w-full items-center justify-center rounded-xl bg-indigo-600 py-4 text-lg font-bold text-white transition-all hover:bg-indigo-500 disabled:bg-slate-800 disabled:text-slate-500"
+            >
+              {isProcessing
+                ? "Processing Payment..."
+                : isExpired
+                  ? "Reservation Expired"
+                  : "Pay $187.00"}
             </button>
           </form>
-    	</div>
- 
-    	{/* Right Column: Order Summary */}
-    	<div className="lg:pl-8">
-      	<div className="bg-slate-900 rounded-3xl p-6 border border-slate-800 sticky top-12">
-        	<h2 className="text-xl font-bold text-white mb-6">Order Summary</h2>
-        	
-        	<div className="flex gap-4 mb-6 border-b border-slate-800 pb-6">
-          	<div className="w-20 h-20 rounded-lg bg-cover bg-center" style={{ backgroundImage: "url('https://images.unsplash.com/photo-1470225620780-dba8ba36b745?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&q=80')" }}></div>
+        </div>
+
+        {/* Right column: Order summary */}
+        <div className="lg:pl-8">
+          <div className="sticky top-12 rounded-3xl border border-slate-800 bg-slate-900 p-6">
+            <h2 className="mb-6 text-xl font-bold text-white">
+              Order Summary
+            </h2>
+
+            <div className="mb-6 flex gap-4 border-b border-slate-800 pb-6">
+              <div
+                role="img"
+                aria-label="Music festival"
+                className="h-20 w-20 shrink-0 rounded-lg bg-cover bg-center"
+                style={{
+                  backgroundImage:
+                    "url('https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&w=200&q=80')",
+                }}
+              />
+
               <div>
-        	    <h3 className="text-white font-bold mb-1">Midnight Odyssey Music Festival</h3>
-            	<p className="text-sm text-slate-400">Nov 13, 2026</p>
-            	<p className="text-sm text-slate-400">Los Angeles, CA</p>
+                <h3 className="mb-1 font-bold text-white">
+                  Midnight Odyssey Music Festival
+                </h3>
+                <p className="text-sm text-slate-400">
+                  Nov 13, 2026
+                </p>
+                <p className="text-sm text-slate-400">
+                  Los Angeles, CA
+                </p>
               </div>
             </div>
- 
-        	<div className="space-y-4 text-sm text-slate-300 border-b border-slate-800 pb-6 mb-6">
-          	<div className="flex justify-between">
+
+            <div className="mb-6 space-y-4 border-b border-slate-800 pb-6 text-sm text-slate-300">
+              <div className="flex justify-between gap-4">
                 <span>General Admission (x2)</span>
                 <span>$178.00</span>
               </div>
-          	<div className="flex justify-between">
+              <div className="flex justify-between gap-4">
                 <span>Service Fee</span>
                 <span>$9.00</span>
               </div>
             </div>
- 
-        	<div className="flex justify-between text-2xl font-extrabold text-white">
+
+            <div className="flex justify-between text-2xl font-extrabold text-white">
               <span>Total</span>
               <span>$187.00</span>
             </div>
-      	</div>
-    	</div>
-  	</div>
- 
-  	{/* Timeout Modal */}
-  	{isExpired && (
-    	<div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-md p-4">
-      	<div className="bg-slate-900 border border-slate-700 p-8 rounded-3xl max-w-md w-full text-center shadow-2xl">
-        	<div className="w-16 h-16 bg-red-500/20 text-red-500 rounded-full flex items-center justify-center mx-auto mb-6 text-3xl">
-          	⏱️
+          </div>
+        </div>
+      </div>
+
+      {/* Timeout modal */}
+      {isExpired && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="timeout-title"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-md"
+        >
+          <div className="w-full max-w-md rounded-3xl border border-slate-700 bg-slate-900 p-8 text-center shadow-2xl">
+            <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-red-500/20 text-3xl text-red-500">
+              ⏱️
             </div>
-        	<h3 className="text-2xl font-bold text-white mb-4">Time Expired</h3>
-        	<p className="text-slate-400 mb-8">
-          	Your 10-minute reservation limit has been reached. These tickets have been released back to the public.
-        	</p>
-        	<button
-              onClick={() => router.push('/')}
-              className="w-full py-3 bg-slate-800 hover:bg-slate-700 text-white rounded-xl font-bold transition"
-        	>
-          	Find More Tickets
+
+            <h2
+              id="timeout-title"
+              className="mb-4 text-2xl font-bold text-white"
+            >
+              Time Expired
+            </h2>
+
+            <p className="mb-8 text-slate-400">
+              Your 10-minute reservation limit has been reached.
+              These tickets may no longer be available.
+            </p>
+
+            <button
+              type="button"
+              onClick={() => router.push("/")}
+              className="w-full rounded-xl bg-slate-800 py-3 font-bold text-white transition hover:bg-slate-700"
+            >
+              Find More Tickets
             </button>
-      	</div>
-    	</div>
-  	)}
-	</div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
